@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PriceWatch · 極簡電商比價助手</title>
+  <meta name="description" content="免費 Chrome 擴充元件，自動比對蝦皮、momo、PChome、Yahoo 等台灣主流電商即時價格，讓你永遠買到最低價。" />
+  <meta property="og:title" content="PriceWatch · 極簡電商比價助手" />
+  <meta property="og:description" content="進入商品頁面，自動比對台灣各大電商即時價格。" />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:   #0A0A0A;
+      --dark:    #111111;
+      --card:    #181818;
+      --border:  rgba(255,255,255,0.07);
+      --white:   #F0F0F0;
+      --muted:   #888888;
+      --dim:     #444444;
+      --accent:  #FF4D1C;
+      --accent2: #FF8C00;
+      --green:   #00D68F;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Outfit', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5vw;
+      height: 60px;
+      background: rgba(10,10,10,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13px; font-weight: 500;
+      letter-spacing: 0.12em; color: var(--white);
+      text-decoration: none;
+    }
+    .nav-dot {
+      width: 8px; height: 8px;
+      background: var(--accent); border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50% { opacity:0.4; transform:scale(0.7); }
+    }
+    .nav-cta {
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 8px;
+      padding: 8px 20px; font-size: 13px; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      font-family: 'Outfit', sans-serif;
+      transition: background 0.15s, transform 0.15s;
+    }
+    .nav-cta:hover { background: #E03A0A; transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px 5vw 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255,77,28,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; font-weight: 500;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(255,77,28,0.1);
+      border: 1px solid rgba(255,77,28,0.25);
+      border-radius: 20px; padding: 5px 14px;
+      margin-bottom: 32px;
+    }
+    .hero-badge-dot {
+      width: 5px; height: 5px;
+      background: var(--accent); border-radius: 50%;
+    }
+    h1 {
+      font-size: clamp(40px, 7vw, 80px);
+      font-weight: 700; line-height: 1.08;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+    }
+    h1 span { color: var(--accent); }
+    .hero-sub {
+      font-size: clamp(16px, 2vw, 20px);
+      font-weight: 300; color: var(--muted);
+      max-width: 560px; margin: 0 auto 48px;
+      line-height: 1.7;
+    }
+    .hero-btns {
+      display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 10px;
+      padding: 14px 28px; font-size: 15px; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      font-family: 'Outfit', sans-serif;
+      transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-primary:hover {
+      background: #E03A0A;
+      box-shadow: 0 8px 24px rgba(255,77,28,0.35);
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--dim); border-radius: 10px;
+      padding: 14px 28px; font-size: 15px; font-weight: 500;
+      cursor: pointer; text-decoration: none;
+      font-family: 'Outfit', sans-serif;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-secondary:hover { border-color: var(--muted); color: var(--white); }
+
+    /* ── PLATFORMS ── */
+    .platforms {
+      display: flex; align-items: center; justify-content: center;
+      gap: 6px; flex-wrap: wrap;
+      margin-top: 64px;
+    }
+    .platform-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; color: var(--dim);
+      letter-spacing: 0.1em; margin-right: 8px;
+    }
+    .platform-pill {
+      font-size: 12px; font-weight: 500;
+      padding: 4px 12px; border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--muted); background: var(--card);
+    }
+
+    /* ── FEATURES ── */
+    section { padding: 100px 5vw; }
+    .section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 16px;
+    }
+    h2 {
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 700; letter-spacing: -0.02em;
+      line-height: 1.15; margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 17px; color: var(--muted);
+      max-width: 520px; line-height: 1.7;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-top: 64px;
+    }
+    .feature-card {
+      background: var(--card);
+      padding: 36px 32px;
+      transition: background 0.2s;
+    }
+    .feature-card:hover { background: #1E1E1E; }
+    .feature-icon {
+      font-size: 28px; margin-bottom: 20px;
+    }
+    .feature-title {
+      font-size: 18px; font-weight: 600;
+      margin-bottom: 10px; letter-spacing: -0.01em;
+    }
+    .feature-desc {
+      font-size: 14px; color: var(--muted); line-height: 1.7;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .how-section { background: var(--dark); }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 40px; margin-top: 64px;
+    }
+    .step { position: relative; }
+    .step-num {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; font-weight: 500;
+      color: var(--accent); letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
+    .step-title {
+      font-size: 20px; font-weight: 600;
+      margin-bottom: 10px; letter-spacing: -0.01em;
+    }
+    .step-desc { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+    /* ── PLATFORMS DETAIL ── */
+    .platform-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px; margin-top: 48px;
+    }
+    .platform-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 18px;
+      display: flex; align-items: center; gap: 12px;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+    .platform-card:hover {
+      border-color: rgba(255,255,255,0.15);
+      transform: translateY(-2px);
+    }
+    .platform-color {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .platform-name {
+      font-size: 14px; font-weight: 500;
+    }
+    .platform-wave {
+      font-size: 10px; color: var(--dim);
+      margin-left: auto; font-family: 'DM Mono', monospace;
+    }
+
+    /* ── AFFILIATE NOTE ── */
+    .affiliate-section {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--dark);
+    }
+    .affiliate-box {
+      max-width: 680px; margin: 0 auto;
+      text-align: center;
+    }
+    .affiliate-box h2 { margin-bottom: 16px; }
+    .affiliate-box p { color: var(--muted); margin-bottom: 12px; }
+    .commission-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px; margin-top: 36px;
+    }
+    .commission-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 14px;
+      text-align: center;
+    }
+    .commission-rate {
+      font-family: 'DM Mono', monospace;
+      font-size: 22px; font-weight: 500;
+      color: var(--green); margin-bottom: 4px;
+    }
+    .commission-site { font-size: 12px; color: var(--muted); }
+
+    /* ── FAQ ── */
+    .faq-list { margin-top: 48px; max-width: 720px; }
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+      padding: 24px 0;
+    }
+    .faq-q {
+      font-size: 17px; font-weight: 500; margin-bottom: 10px;
+      cursor: pointer;
+    }
+    .faq-a { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+    /* ── CTA ── */
+    .cta-section {
+      text-align: center;
+      background: var(--dark);
+      border-top: 1px solid var(--border);
+    }
+    .cta-section h2 { margin-bottom: 16px; }
+    .cta-section p { color: var(--muted); margin-bottom: 36px; }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 32px 5vw;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-logo {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px; color: var(--dim);
+      letter-spacing: 0.1em;
+    }
+    .footer-note { font-size: 12px; color: var(--dim); }
+
+    /* ── MOCK OVERLAY ── */
+    .overlay-demo {
+      max-width: 280px; margin: 64px auto 0;
+      background: #fff; border-radius: 16px;
+      overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+      font-family: 'Outfit', sans-serif;
+    }
+    .demo-header {
+      background: #F7F7F7; padding: 10px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .demo-logo {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 11px; font-weight: 600; color: #111;
+      letter-spacing: 0.04em;
+    }
+    .demo-logo-icon {
+      width: 18px; height: 18px; background: #EE4D2D;
+      border-radius: 4px; display: flex; align-items: center;
+      justify-content: center; font-size: 10px; color: #fff; font-weight: 700;
+    }
+    .demo-badge {
+      font-size: 10px; color: #EE4D2D;
+      background: rgba(238,77,45,0.1);
+      border: 1px solid #EE4D2D;
+      border-radius: 20px; padding: 2px 8px;
+    }
+    .demo-product { padding: 14px 14px 10px; border-bottom: 1px solid rgba(0,0,0,0.06); }
+    .demo-pname { font-size: 12px; color: #666; margin-bottom: 8px; line-height: 1.4; }
+    .demo-price-label { font-size: 10px; color: #999; margin-bottom: 2px; }
+    .demo-price { font-size: 30px; font-weight: 700; color: #111; letter-spacing: -0.02em; line-height: 1; }
+    .demo-price-unit { font-size: 13px; color: #999; }
+    .demo-compare { padding: 12px 14px; border-bottom: 1px solid rgba(0,0,0,0.06); }
+    .demo-compare-title {
+      font-size: 9px; font-weight: 600; color: #aaa;
+      letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px;
+    }
+    .demo-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .demo-row-label { font-size: 12px; color: #888; }
+    .demo-row-right { display: flex; align-items: center; gap: 8px; }
+    .demo-row-price { font-size: 14px; font-weight: 600; color: #111; }
+    .demo-disc {
+      font-size: 11px; font-weight: 700;
+      background: #00A650; color: #fff;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .demo-compare-btn {
+      margin: 12px 14px 0; padding: 9px;
+      background: #EE4D2D; color: #fff;
+      border-radius: 8px; font-size: 12px; font-weight: 600;
+      text-align: center;
+    }
+    .demo-compare-results {
+      padding: 10px 14px 14px;
+    }
+    .demo-result-title {
+      font-size: 9px; font-weight: 600; color: #aaa;
+      letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .demo-result-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 0; border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .demo-result-site { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #333; }
+    .demo-site-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .demo-result-price { font-size: 13px; font-weight: 600; }
+    .demo-result-best {
+      font-size: 10px; background: rgba(238,77,45,0.1);
+      color: #EE4D2D; padding: 1px 6px; border-radius: 3px;
+    }
+
+    @media (max-width: 640px) {
+      nav { padding: 0 4vw; }
+      section { padding: 70px 4vw; }
+      footer { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="nav-dot"></div>
+    PRICEWATCH
+  </a>
+  <a class="nav-cta" href="https://chrome.google.com/webstore" target="_blank">
+    免費安裝
+  </a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">
+    <div class="hero-badge-dot"></div>
+    Chrome 擴充元件 · 完全免費
+  </div>
+  <h1>台灣電商<br><span>即時比價</span>工具</h1>
+  <p class="hero-sub">
+    進入任何商品頁面，PriceWatch 自動比對蝦皮、momo、PChome 等台灣主流電商的即時價格，讓你永遠以最低價購物。
+  </p>
+  <div class="hero-btns">
+    <a class="btn-primary" href="https://chrome.google.com/webstore" target="_blank">
+      ↓ 免費安裝 Chrome 擴充元件
+    </a>
+    <a class="btn-secondary" href="#how">了解功能</a>
+  </div>
+
+  <!-- MOCK OVERLAY -->
+  <div class="overlay-demo">
+    <div class="demo-header">
+      <div class="demo-logo">
+        <div class="demo-logo-icon">P</div>
+        PRICEWATCH
+      </div>
+      <div class="demo-badge">蝦皮</div>
+    </div>
+    <div class="demo-product">
+      <div class="demo-pname">Samsung Galaxy S24 256GB 智慧型手機</div>
+      <div class="demo-price-label">目前價格</div>
+      <div>
+        <span class="demo-price-unit">NT$</span>
+        <span class="demo-price">13,249</span>
+      </div>
+    </div>
+    <div class="demo-compare">
+      <div class="demo-compare-title">價格比較</div>
+      <div class="demo-row">
+        <span class="demo-row-label">歷史最低</span>
+        <div class="demo-row-right">
+          <span class="demo-row-price">$11,990</span>
+          <span class="demo-disc">-9%</span>
+        </div>
+      </div>
+      <div class="demo-row" style="margin-bottom:0;">
+        <span class="demo-row-label">近期最低 <span style="font-size:10px;color:#ccc;">6個月</span></span>
+        <div class="demo-row-right">
+          <span class="demo-row-price">$12,500</span>
+          <span class="demo-disc">-6%</span>
+        </div>
+      </div>
+      <div class="demo-compare-btn">🔍 即時比價</div>
+    </div>
+    <div class="demo-compare-results">
+      <div class="demo-result-title">各平台即時價格</div>
+      <div class="demo-result-row">
+        <div class="demo-result-site">
+          <div class="demo-site-dot" style="background:#EE4D2D;"></div>
+          蝦皮
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="demo-result-price" style="color:#EE4D2D;">$12,800</span>
+          <span class="demo-result-best">最低</span>
+        </div>
+      </div>
+      <div class="demo-result-row">
+        <div class="demo-result-site">
+          <div class="demo-site-dot" style="background:#CC0000;"></div>
+          PChome
+        </div>
+        <span class="demo-result-price">$13,249</span>
+      </div>
+      <div class="demo-result-row" style="border:none;">
+        <div class="demo-result-site">
+          <div class="demo-site-dot" style="background:#E1619B;"></div>
+          momo
+        </div>
+        <span class="demo-result-price">$13,500</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="platforms">
+    <span class="platform-label">支援平台</span>
+    <span class="platform-pill">蝦皮</span>
+    <span class="platform-pill">momo</span>
+    <span class="platform-pill">PChome</span>
+    <span class="platform-pill">Yahoo 購物</span>
+    <span class="platform-pill">樂天</span>
+    <span class="platform-pill">燦坤</span>
+    <span class="platform-pill">更多</span>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-label">核心功能</div>
+  <h2>購物決策<br>不再猶豫</h2>
+  <p class="section-sub">PriceWatch 在你瀏覽商品的同時，靜靜地在右側完成所有比價工作。</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">即時跨平台比價</div>
+      <div class="feature-desc">點一下「即時比價」按鈕，自動搜尋台灣各大電商同款商品，排列最低到最高價，直接點擊跳轉。</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📉</div>
+      <div class="feature-title">歷史價格追蹤</div>
+      <div class="feature-desc">顯示歷史最低與近期（6個月）最低價格，搭配 Steam 風格折扣標籤，一眼判斷現在是否該買。</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔔</div>
+      <div class="feature-title">降價監控通知</div>
+      <div class="feature-desc">加入監控清單，價格下降時立即通知。想買卻嫌貴？等它降價再出手。</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎨</div>
+      <div class="feature-title">極簡懸浮介面</div>
+      <div class="feature-desc">側邊懸浮視窗自動配合站點主色，不干擾原本的購物流程，隨時可收起。</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <div class="feature-title">完全免費，無廣告</div>
+      <div class="feature-desc">不收費、不追蹤個人資料、不顯示廣告。資料存在你自己的瀏覽器本地端。</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌙</div>
+      <div class="feature-title">亮色 / 暗色自動切換</div>
+      <div class="feature-desc">根據你的系統設定自動切換亮色或深色模式，眼睛舒適不刺眼。</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section" id="how">
+  <div class="section-label">使用方式</div>
+  <h2>三步驟<br>開始省錢</h2>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01 —</div>
+      <div class="step-title">安裝擴充元件</div>
+      <div class="step-desc">從 Chrome 線上應用程式商店免費安裝，不需要帳號，安裝完畢立即生效。</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02 —</div>
+      <div class="step-title">瀏覽商品頁面</div>
+      <div class="step-desc">前往蝦皮、momo、PChome 等任一支援平台的商品頁面，PriceWatch 自動偵測並顯示分析。</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03 —</div>
+      <div class="step-title">點擊最低價連結</div>
+      <div class="step-desc">比價結果列出各平台價格，點擊直接跳轉到最便宜的賣場，完成購物。</div>
+    </div>
+    <div class="step">
+      <div class="step-num">04 —</div>
+      <div class="step-title">設定降價監控</div>
+      <div class="step-desc">覺得現在還不夠便宜？加入監控，等到你設定的目標價再自動通知你。</div>
+    </div>
+  </div>
+</section>
+
+<!-- PLATFORMS -->
+<section>
+  <div class="section-label">支援平台</div>
+  <h2>台灣主流電商<br>一網打盡</h2>
+  <p class="section-sub">持續擴充支援平台中，涵蓋 3C、家電、生活用品、書籍等各類商品。</p>
+
+  <div class="platform-grid">
+    <div class="platform-card">
+      <div class="platform-color" style="background:#EE4D2D;"></div>
+      <span class="platform-name">蝦皮購物</span>
+      <span class="platform-wave">P1</span>
+    </div>
+    <div class="platform-card">
+      <div class="platform-color" style="background:#E1619B;"></div>
+      <span class="platform-name">momo 購物</span>
+      <span class="platform-wave">P1</span>
+    </div>
+    <div class="platform-card">
+      <div class="platform-color" style="background:#CC0000;"></div>
+      <span class="platform-name">PChome 24h</span>
+      <span class="platform-wave">P1</span>
+    </div>
+    <div class="platform-card">
+      <div class="platform-color" style="background:#7B0099;"></div>
+      <span class="platform-name">Yahoo 購物</span>
+      <span class="platform-wave">P1</span>
+    </div>
+    <div class="platform-card">
+      <div class="platform-color" style="background:#BF0000;"></div>
+      <span class="platform-name">樂天市場</span>
+      <span class="platform-wave">P1</span>
+    </div>
+    <div class="platform-card">
+      <div class="platform-color" style="background:#FF6600;"></div>
+      <span class="platform-name">燦坤</span>
+      <span class="platform-wave">P2</span>
+    </div>
+    <div class="platform-card">
+      <div class="platform-color" style="background:#003399;"></div>
+      <span class="platform-name">神腦國際</span>
+      <span class="platform-wave">P2</span>
+    </div>
+    <div class="platform-card">
+      <div class="platform-color" style="background:#009900;"></div>
+      <span class="platform-name">全國電子</span>
+      <span class="platform-wave">P2</span>
+    </div>
+    <div class="platform-card">
+      <div class="platform-color" style="background:#CC0033;"></div>
+      <span class="platform-name">博客來</span>
+      <span class="platform-wave">P2</span>
+    </div>
+    <div class="platform-card" style="border-style:dashed;opacity:0.5;">
+      <div class="platform-color" style="background:#888;"></div>
+      <span class="platform-name">更多...</span>
+    </div>
+  </div>
+</section>
+
+<!-- AFFILIATE DISCLOSURE -->
+<section class="affiliate-section">
+  <div class="affiliate-box">
+    <div class="section-label" style="text-align:center;">透明揭露</div>
+    <h2>免費的秘密</h2>
+    <p>PriceWatch 完全免費使用。當你透過比價結果的連結前往電商平台並完成購買時，我們可能獲得少量聯盟行銷佣金。</p>
+    <p style="font-size:14px;">這不影響比價結果的排序，我們永遠以最低價優先。</p>
+    <div class="commission-grid">
+      <div class="commission-card">
+        <div class="commission-rate">~5%</div>
+        <div class="commission-site">蝦皮</div>
+      </div>
+      <div class="commission-card">
+        <div class="commission-rate">~2%</div>
+        <div class="commission-site">momo</div>
+      </div>
+      <div class="commission-card">
+        <div class="commission-rate">~3%</div>
+        <div class="commission-site">PChome</div>
+      </div>
+      <div class="commission-card">
+        <div class="commission-rate">~3%</div>
+        <div class="commission-site">Yahoo</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section>
+  <div class="section-label">常見問題</div>
+  <h2>FAQ</h2>
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q">PriceWatch 會收集我的個人資料嗎？</div>
+      <div class="faq-a">不會。所有瀏覽記錄與價格資料都只存在你自己的瀏覽器本地端（chrome.storage），我們的伺服器不收集任何個人識別資料。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">比價結果為什麼不同天會不一樣？</div>
+      <div class="faq-a">因為是即時搜尋各平台的當下價格，電商平台的促銷活動每天都在變動，所以結果會隨時間改變，這是正常現象。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">歷史價格資料從哪裡來？</div>
+      <div class="faq-a">每次你造訪一個商品頁面，PriceWatch 就會記錄當天的價格。時間越長，累積的歷史資料就越完整。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">支援哪些瀏覽器？</div>
+      <div class="faq-a">目前支援 Google Chrome。基於 Chromium 的瀏覽器（Edge、Brave）理論上也相容，但尚未正式測試。</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="section-label" style="text-align:center;">現在開始</div>
+  <h2>免費安裝，<br>今天就省錢</h2>
+  <p>不需要帳號，不需要信用卡。一個擴充元件，搞定所有電商比價。</p>
+  <a class="btn-primary" href="https://chrome.google.com/webstore" target="_blank">
+    ↓ 從 Chrome 商店免費安裝
+  </a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-logo">PRICEWATCH · 極簡比價助手</span>
+  <span class="footer-note">本工具含聯盟行銷連結，不影響比價公正性。</span>
+</footer>
+
+</body>
+</html>
